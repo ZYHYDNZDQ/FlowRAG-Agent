@@ -1,0 +1,71 @@
+[project]
+name = "flowrag-agent"
+version = "0.1.0"
+description = "本地化知识库智能 Agent：PDF 理解、动态工作流编排与 RAG"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "FlowRAG Team" }]
+keywords = ["langchain", "chroma", "rag", "agent", "streamlit", "pdf"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "streamlit>=1.32.0",
+    "langchain>=0.3.0",
+    "langchain-core>=0.3.0",
+    "langchain-community>=0.3.0",
+    "langchain-text-splitters>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "langchain-huggingface>=0.1.0",
+    "chromadb>=0.5.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "pymupdf>=1.24.0",
+    "sentence-transformers>=3.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+]
+ollama = [
+    "langchain-ollama>=0.2.0",
+]
+openai = [
+    "langchain-openai>=0.2.0",
+]
+
+[project.scripts]
+flowrag-ingest = "scripts.ingest_cli:main"
+flowrag-reset = "scripts.reset_db:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["config*", "app*", "ui*", "agent*", "ingestion*", "retrieval*", "models*", "llm*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "example: RAG usage examples (also serve as API documentation)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
