@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from agent.orchestrator import run
+from agent.runtime import ExecuteRequest, get_runtime
 from ui.components.agent_trace import render_agent_trace
 from ui.components.citation_view import render_citations
 from ui.state import (
@@ -44,11 +44,15 @@ def _handle_user_message(prompt: str) -> None:
     with st.chat_message("assistant"):
         with st.spinner("Agent 执行中…"):
             try:
-                result = run(
-                    prompt,
-                    selected_doc_ids=selected,
-                    on_step=append_trace_step,
+                execute_result = get_runtime().execute(
+                    ExecuteRequest(
+                        query=prompt,
+                        session_id="streamlit",
+                        selected_doc_ids=selected,
+                        on_step=append_trace_step,
+                    ),
                 )
+                result = execute_result.answer
             except Exception as exc:
                 error_msg = f"Agent 执行失败：{exc}"
                 append_message("assistant", error_msg)

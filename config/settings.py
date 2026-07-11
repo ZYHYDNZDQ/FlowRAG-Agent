@@ -65,6 +65,10 @@ class Settings(BaseSettings):
     max_context_chunks: int = 8
     max_context_tokens: int = 4000
 
+    # Session memory (short-term conversation history for prompt injection)
+    memory_max_turns: int = 5
+    memory_max_tokens: int = 1500
+
     # Chunk ID template (doc_short, page, chunk_index)
     chunk_id_template: str = "{doc_short}_p{page:04d}_c{chunk_index:04d}"
 

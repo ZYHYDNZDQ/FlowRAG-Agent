@@ -60,7 +60,9 @@ def embed_query(
     """
     Encode a single user query into the same vector space as stored chunks.
 
-    Used by ``ChromaStore.query`` when no pre-computed query embedding is supplied.
+    Used during ingestion and by callers that pre-compute query vectors.
+    ``ChromaStore.query`` falls back to ``llm.factory.get_embeddings`` when
+    no embedding instance is supplied.
     """
     model = embeddings or get_embeddings()
     return model.embed_query(query)

@@ -14,23 +14,41 @@ CITATION_INSTRUCTION = """
 仅引用上下文中实际出现的内容，不要编造页码或来源。
 """.strip()
 
+EMPTY_CONVERSATION_HISTORY = "（无）"
+
+AGENT_USER_PROMPT_TEMPLATE = """
+Conversation History:
+{history}
+
+Retrieved Context:
+{context}
+
+Question:
+{question}
+""".strip()
+
+
+def build_agent_user_prompt(*, history: str, context: str, question: str) -> str:
+    """Unified user prompt with session history, retrieval context, and question."""
+    return AGENT_USER_PROMPT_TEMPLATE.format(
+        history=history or EMPTY_CONVERSATION_HISTORY,
+        context=context,
+        question=question,
+    )
+
 # ---------------------------------------------------------------------------
 # Router
 # ---------------------------------------------------------------------------
 
 ROUTER_SYSTEM_PROMPT = """
-你是 FlowRAG-Agent 的任务分类器。根据用户问题判断意图类型：
+你是 FlowRAG-Agent 的任务分类器。根据用户问题选择唯一 Skill：
 
-- qa：具体事实查询、定义、条款内容等问题
-- summarize：总结、概述、摘要、归纳类请求
-- analyze：对比、分析、评估、风险、结论类请求
+- QA：具体事实查询、定义、条款内容等问题
+- SUMMARY：总结、概述、摘要、归纳类请求
+- ANALYSIS：对比、分析、评估、风险、差异类请求
 
-同时判断文档范围 scope：
-- all：未指定文档或需要跨文档检索
-- single：明确针对某一个文档
-- selected：用户已选定多个文档
-
-以结构化 JSON 输出，不要解释。
+只输出结构化 JSON，包含 skill 与 confidence（0~1）。
+不要选择 Tool，不要决定检索范围。
 """.strip()
 
 # ---------------------------------------------------------------------------
@@ -43,14 +61,7 @@ QA_SYSTEM_PROMPT = f"""
 {CITATION_INSTRUCTION}
 """.strip()
 
-QA_USER_TEMPLATE = """
-检索上下文：
-{context}
-
-用户问题：{query}
-
-请简洁准确地回答。
-""".strip()
+QA_USER_TEMPLATE = AGENT_USER_PROMPT_TEMPLATE
 
 # ---------------------------------------------------------------------------
 # Summarize Workflow
@@ -92,14 +103,7 @@ ANALYZE_SYSTEM_PROMPT = f"""
 {CITATION_INSTRUCTION}
 """.strip()
 
-ANALYZE_USER_TEMPLATE = """
-分析任务：{query}
-
-检索上下文：
-{context}
-
-请进行结构化分析。
-""".strip()
+ANALYZE_USER_TEMPLATE = AGENT_USER_PROMPT_TEMPLATE
 
 # ---------------------------------------------------------------------------
 # Sub-query generation (Analyze workflow)

@@ -43,10 +43,15 @@ ollama = [
 openai = [
     "langchain-openai>=0.2.0",
 ]
+mcp = [
+    "mcp>=1.6.0",
+]
 
 [project.scripts]
 flowrag-ingest = "scripts.ingest_cli:main"
 flowrag-reset = "scripts.reset_db:main"
+flowrag-eval = "evaluation.runner:main"
+flowrag-mcp = "mcp_server.server:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]
@@ -54,13 +59,22 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["config*", "app*", "ui*", "agent*", "ingestion*", "retrieval*", "models*", "llm*", "scripts*"]
+include = ["config*", "app*", "ui*", "agent*", "ingestion*", "retrieval*", "models*", "llm*", "scripts*", "tools*", "skills*", "memory*", "evaluation*", "mcp_server*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
 markers = [
-    "example: RAG usage examples (also serve as API documentation)",
+    "rag_retrieval: RAG retrieval layer tests",
+    "rag_answer: RAG answer and citation tests",
+    "router: Intent router tests",
+    "tool: Tool system tests",
+    "skill: Skill workflow tests",
+    "runtime: Agent Runtime tests",
+    "memory: Memory and isolation tests",
+    "e2e: End-to-end pipeline tests",
+    "unit: Supporting unit tests",
+    "example: RAG usage examples (API documentation)",
 ]
 
 [tool.ruff]

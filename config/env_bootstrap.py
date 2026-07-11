@@ -9,9 +9,17 @@ later os.environ updates are ignored unless constants.ENDPOINT is patched too.
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def ensure_project_root_on_path() -> None:
+    """Ensure repo root is importable when running Streamlit or stale editable installs."""
+    root = str(_PROJECT_ROOT)
+    if root not in sys.path:
+        sys.path.insert(0, root)
 
 
 def _read_hf_endpoint_from_dotenv() -> str | None:
@@ -50,4 +58,5 @@ def apply_hf_endpoint(endpoint: str | None = None) -> None:
 
 
 # Run as early as possible when this module is imported.
+ensure_project_root_on_path()
 apply_hf_endpoint()

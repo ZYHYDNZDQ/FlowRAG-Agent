@@ -121,10 +121,9 @@ class ChromaStore:
             if embeddings is not None:
                 vector = embeddings.embed_query(query_text)
             else:
-                # Lazy import avoids circular dependency with ingestion.indexer
-                from ingestion.embedder import embed_query
+                from llm.factory import get_embeddings
 
-                vector = embed_query(query_text)
+                vector = get_embeddings(self._settings).embed_query(query_text)
 
         result = self._collection.query(
             query_embeddings=[vector],

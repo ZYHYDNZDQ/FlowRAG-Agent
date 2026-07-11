@@ -1,0 +1,5 @@
+# Isolated eval KB cache — do not commit
+.cache/
+
+# Generated reports (keep .gitkeep)
+*_report.md

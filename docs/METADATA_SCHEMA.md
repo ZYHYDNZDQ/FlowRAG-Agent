@@ -1,7 +1,7 @@
 # Chroma Metadata Schema 与检索 Filter 约定
 
-> FlowRAG-Agent 数据契约文档。入库、检索、引用构建均须遵守本规范。
-
+> FlowRAG-Agent 数据契约文档。入库、检索、Citation 构建均须遵守本规范。  
+> 架构与 Skill 路由见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
 ## 1. Collection 配置
 
 | 配置项 | 默认值 | 说明 |
@@ -98,13 +98,13 @@ where = {
 }
 ```
 
-## 6. 工作流 × Filter 映射
+## 6. Skill × Filter 映射
 
-| 工作流 | 默认 scope | Filter | top_k |
-|--------|------------|--------|-------|
-| QA | 用户选中 / 全库 | F1 / F2 / F0 | 6 |
-| Summarize | 单文档 | F1 | 15~20 |
-| Analyze | 单/多文档 | F1 / F2 (+ F4) | 5 × N queries |
+| Skill | 默认 scope | Filter | top_k |
+|-------|------------|--------|-------|
+| QA | 用户选中 / 全库 | F1 / F2 / F0 | 6（`default_top_k`） |
+| Summary | 单文档 | F1 | 12 |
+| Analysis | 单/多文档 | F1 / F2（+ F4） | 4 × N sub-queries |
 
 ## 7. RetrievalScope → where 构造
 

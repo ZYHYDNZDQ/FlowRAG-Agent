@@ -26,7 +26,7 @@ from models.schemas import DocStatus, RetrievalMode, RetrievalScope
 from retrieval.chroma_store import ChromaStore
 from retrieval.citation_builder import build_citations, format_citation_label
 from retrieval.retriever_factory import create_retriever, retrieve_with_sources
-from tests.fixtures.sample_content import (
+from tests.fixtures.data.documents import (
     SAMPLE_CONTRACT_FILENAME,
     SAMPLE_CONTRACT_PAGES,
     SAMPLE_QUERIES,
@@ -292,7 +292,7 @@ def test_example_parametrized_queries(ingested_contract, case):
     """
     Example: table-driven retrieval checks for multiple user questions.
 
-    Extend ``tests/fixtures/sample_content.py:SAMPLE_QUERIES`` with new rows.
+    Extend ``tests/fixtures/data/documents.py:SAMPLE_QUERIES`` with new rows.
     """
     result, store, _registry, embeddings = ingested_contract
     scope = RetrievalScope(mode=RetrievalMode.SINGLE, doc_ids=[result.doc_id])

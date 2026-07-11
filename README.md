@@ -1,49 +1,94 @@
 # FlowRAG-Agent
 
-面向企业知识管理场景的**本地化 AI Agent 系统**。用户上传 PDF 后，Agent 理解任务意图，动态选择检索、总结、分析等工作流，并基于 Chroma 向量库生成带引用来源的可信回答。
+面向企业 PDF 知识库的**本地化 Agentic RAG 系统**。用户上传文档后，系统通过 LLM Router 选择业务 Skill（问答 / 总结 / 分析），编排检索与生成 Tool，输出带页码引用的可信回答。
+
+> **定位**：固定 Skill 编排 + 意图路由，不是 ReAct 自主 Agent。详见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ## 核心能力
 
-- PDF 上传、解析与文本切分
-- Embedding 入库 Chroma（本地持久化）
-- RAG 检索增强生成
-- Agent 动态工作流：问答 / 总结 / 文档分析
-- 答案附带引用来源（文件名 + 页码）
-- Streamlit Web 界面，可视化 Agent 执行过程
+
+| 能力             | 说明                                               |
+| -------------- | ------------------------------------------------ |
+| PDF 入库         | 解析、切分、Embedding、写入 Chroma（本地持久化）                 |
+| RAG 检索         | 按文档范围过滤、去重、Citation 构建                           |
+| Agent 编排       | Runtime → Router → Skill → Tool → RAGService     |
+| Session Memory | 多轮对话 history 由 Runtime 注入 Prompt                 |
+| 执行轨迹           | Streamlit 可视化 Router / Retriever / Generator 等步骤 |
+| 离线评估           | Top-k Hit Rate + LLM-as-Judge                    |
+| MCP 服务         | 对外暴露 `search_document` 检索能力                      |
+
 
 ## 技术栈
 
-| 组件 | 选型 |
-|------|------|
-| 语言 | Python 3.10+ |
-| 框架 | LangChain (LCEL) |
-| 向量库 | ChromaDB |
-| 界面 | Streamlit |
-| PDF | PyMuPDF |
-| Embedding | sentence-transformers (bge-small-zh) |
-| LLM | Ollama / OpenAI 兼容 API |
+
+| 组件        | 选型                                                 |
+| --------- | -------------------------------------------------- |
+| 语言        | Python 3.10+                                       |
+| 框架        | LangChain                                          |
+| 向量库       | ChromaDB                                           |
+| 界面        | Streamlit                                          |
+| PDF       | PyMuPDF                                            |
+| Embedding | sentence-transformers（默认 `BAAI/bge-small-zh-v1.5`） |
+| LLM       | Ollama / OpenAI 兼容 API                             |
+| 配置        | pydantic-settings                                  |
+| 测试        | pytest（83+）                                        |
+| MCP       | `mcp`（可选，`pip install -e ".[mcp]"`）                |
+
 
 ## 快速开始
 
+### 1. 环境准备
+
 ```bash
-# 1. 创建虚拟环境
 python -m venv .venv
 .venv\Scripts\activate          # Windows
-# source .venv/bin/activate     # Linux/macOS
+# source .venv/bin/activate     # Linux / macOS
 
-# 2. 安装依赖
 pip install -e ".[dev,ollama]"
+```
 
-# 3. 配置环境
+### 2. 配置
+
+```bash
 copy .env.example .env          # Windows
-# cp .env.example .env            # Linux/macOS
+# cp .env.example .env          # Linux / macOS
+```
 
-# 4. 启动 Streamlit
+按需修改 `.env`：LLM 提供商、Embedding 模型、Chroma 路径等。完整变量见 [.env.example](.env.example)。
+
+### 3. 启动 Web UI
+
+```bash
 streamlit run app/streamlit_app.py
+```
 
-# 5. 运行测试（含 RAG 用法示例）
-pytest tests/ -v
-pytest tests/examples/ -v    # 仅查看可复制的 API 示例
+流程：侧边栏上传 PDF → 选择文档范围 → 主区域输入问题（问答 / 总结 / 分析）。
+
+### 4. CLI 工具
+
+
+| 命令                          | 说明                       |
+| --------------------------- | ------------------------ |
+| `flowrag-ingest <file.pdf>` | 命令行批量入库                  |
+| `flowrag-reset`             | 清空知识库（Chroma + registry） |
+| `flowrag-eval --fake`       | 离线评估（无需真实 LLM）           |
+| `flowrag-mcp`               | 启动 MCP 检索服务（stdio）       |
+
+
+等效调用：
+
+```bash
+python -m scripts.ingest_cli path/to/file.pdf
+python -m evaluation.runner --fake
+python -m mcp_server.server
+```
+
+### 5. 运行测试
+
+```bash
+pytest tests/ -q -m "not example"    # 全量（跳过 API 示例）
+pytest tests/ -m router -v           # 按层运行
+pytest tests/examples/ -v            # RAG API 用法示例
 ```
 
 测试说明见 [tests/README.md](tests/README.md)。
@@ -54,33 +99,58 @@ pytest tests/examples/ -v    # 仅查看可复制的 API 示例
 FlowRAG-Agent/
 ├── app/                 # Streamlit 入口
 ├── ui/                  # UI 组件与 session 状态
-├── agent/               # Orchestrator、Router、Workflows
+├── agent/               # Runtime、Router、Orchestrator
+├── skills/              # 业务 Skill（QA / Summary / Analysis）
+├── tools/               # 原子 Tool 与 Registry
+├── memory/              # Session 级短期记忆
 ├── ingestion/           # PDF 解析 → 切分 → 入库
-├── retrieval/           # Chroma 检索与引用构建
-├── models/              # Pydantic Schema、文档注册表
+├── retrieval/           # RAGService、Chroma、Citation
+├── models/              # Pydantic Schema、doc_registry
 ├── llm/                 # LLM / Embedding 工厂
 ├── config/              # 配置与 Prompt 模板
-├── scripts/             # CLI 工具
-├── tests/               # 单元测试
+├── evaluation/          # 离线评估
+├── mcp_server/          # MCP 服务
+├── scripts/             # CLI 脚本
+├── tests/               # 分层测试
 ├── docs/                # 架构与设计文档
 └── data/                # 运行时数据（gitignore）
 ```
 
-详细设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 与 [docs/METADATA_SCHEMA.md](docs/METADATA_SCHEMA.md)。
+## 文档索引
+
+
+| 文档                                                 | 内容                          |
+| -------------------------------------------------- | --------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)       | 系统架构、数据流、扩展点                |
+| [docs/MODULE_MAP.md](docs/MODULE_MAP.md)           | 模块与文件职责索引                   |
+| [docs/METADATA_SCHEMA.md](docs/METADATA_SCHEMA.md) | Chroma metadata 与 filter 约定 |
+| [tests/README.md](tests/README.md)                 | 测试分层与运行方式                   |
+| [evaluation/README.md](evaluation/README.md)       | 离线评估指标与用法                   |
+
 
 ## 开发状态
 
-| 模块 | 状态 |
-|------|------|
-| 配置 / Schema / Prompts | ✅ 完成 |
-| doc_registry (SQLite) | ✅ 完成 |
-| Chroma where filter / Citation builder | ✅ 完成 |
-| Intent Router (规则层) | ✅ 完成 |
-| Streamlit UI 骨架 | ✅ 可运行 |
-| PDF 入库流水线 (RAG Core) | ✅ 完成 |
-| Retriever + Citation | ✅ 完成 |
-| RAG 问答 / Agent Workflows | ✅ 完成 |
-| LLM 工厂 | ✅ 完成 |
+
+| 模块                                | 状态  |
+| --------------------------------- | --- |
+| 配置 / Schema / Prompts             | ✅   |
+| PDF 入库流水线                         | ✅   |
+| RAGService + Citation             | ✅   |
+| LLM Router（结构化输出 + 规则回退）          | ✅   |
+| Skill 编排（QA / Summary / Analysis） | ✅   |
+| AgentRuntime + Trace              | ✅   |
+| Session Memory 注入                 | ✅   |
+| Streamlit UI                      | ✅   |
+| 分层测试（83+）                         | ✅   |
+| 离线 Evaluation                     | ✅   |
+| MCP Server                        | ✅   |
+
+
+## 远期目标
+
+- ReAct / Planner 自主 Agent
+- 长期记忆
+- 微服务部署、多租户、OCR
 
 ## License
 

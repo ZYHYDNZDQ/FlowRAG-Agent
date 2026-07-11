@@ -17,6 +17,7 @@ from pydantic import ConfigDict, Field
 from config.settings import Settings, get_settings
 from models.schemas import RetrievalScope
 from retrieval.chroma_store import ChromaStore
+from retrieval.rag_service import get_rag_service
 
 
 class ChromaRetriever(BaseRetriever):
@@ -44,21 +45,14 @@ class ChromaRetriever(BaseRetriever):
         run_manager: CallbackManagerForRetrieverRun | None = None,
     ) -> list[Document]:
         """Retrieve chunks and map them to LangChain Documents with source metadata."""
-        where = ChromaStore.build_where_filter(self.scope)
-        chunks = self.store.query(
+        chunks = get_rag_service().query_chunks(
+            self.store,
             query,
+            self.scope,
             top_k=self.top_k,
-            where=where,
+            score_threshold=self.score_threshold,
             embeddings=self.embeddings,
         )
-
-        if self.score_threshold is not None:
-            chunks = [
-                chunk
-                for chunk in chunks
-                if chunk.score is not None and chunk.score >= self.score_threshold
-            ]
-
         return [_chunk_to_document(chunk) for chunk in chunks]
 
 

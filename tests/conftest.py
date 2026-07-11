@@ -1,12 +1,12 @@
-"""Shared pytest fixtures for RAG pipeline tests."""
+"""Shared pytest fixtures for FlowRAG-Agent test suite."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import fitz
 import pytest
+from langchain_community.chat_models.fake import FakeListChatModel
 from langchain_community.embeddings import FakeEmbeddings
 
 from config.settings import Settings
@@ -14,23 +14,33 @@ from ingestion.indexer import ingest_pdf
 from models.doc_registry import DocRegistry
 from models.schemas import DocStatus, IngestResult
 from retrieval.chroma_store import ChromaStore
-from tests.fixtures.sample_content import SAMPLE_CONTRACT_FILENAME, SAMPLE_CONTRACT_PAGES
+from tests.fixtures.data.documents import SAMPLE_CONTRACT_FILENAME, SAMPLE_CONTRACT_PAGES
+from tests.fixtures.data.llm_responses import FAKE_LLM_RESPONSES
+from tests.fixtures.factories import make_sample_pdf
 
 if TYPE_CHECKING:
     from langchain_core.embeddings import Embeddings
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Register custom markers."""
-    config.addinivalue_line(
-        "markers",
-        "example: RAG usage examples (also serve as API documentation)",
-    )
+    markers = [
+        ("rag_retrieval", "RAG retrieval layer tests"),
+        ("rag_answer", "RAG answer generation and citation tests"),
+        ("router", "Intent router tests"),
+        ("tool", "Tool system tests"),
+        ("skill", "Skill workflow tests"),
+        ("runtime", "Agent Runtime tests"),
+        ("memory", "Memory manager and isolation tests"),
+        ("e2e", "End-to-end pipeline tests"),
+        ("unit", "Supporting unit tests"),
+        ("example", "RAG usage examples (API documentation)"),
+    ]
+    for name, description in markers:
+        config.addinivalue_line("markers", f"{name}: {description}")
 
 
 @pytest.fixture
 def rag_settings(tmp_path: Path) -> Settings:
-    """Isolated data directories and small chunks for fast tests."""
     data_dir = tmp_path / "data"
     return Settings(
         data_dir=data_dir,
@@ -45,8 +55,12 @@ def rag_settings(tmp_path: Path) -> Settings:
 
 @pytest.fixture
 def fake_embeddings() -> FakeEmbeddings:
-    """Deterministic 128-d vectors — no model download required."""
     return FakeEmbeddings(size=128)
+
+
+@pytest.fixture
+def fake_llm() -> FakeListChatModel:
+    return FakeListChatModel(responses=list(FAKE_LLM_RESPONSES))
 
 
 @pytest.fixture
@@ -63,11 +77,7 @@ def doc_registry(rag_settings: Settings) -> DocRegistry:
 
 @pytest.fixture
 def sample_contract_pdf(tmp_path: Path) -> Path:
-    """Two-page sample PDF used across pipeline and example tests."""
-    return make_sample_pdf(
-        tmp_path / SAMPLE_CONTRACT_FILENAME,
-        SAMPLE_CONTRACT_PAGES,
-    )
+    return make_sample_pdf(tmp_path / SAMPLE_CONTRACT_FILENAME, SAMPLE_CONTRACT_PAGES)
 
 
 @pytest.fixture
@@ -78,12 +88,6 @@ def ingested_contract(
     doc_registry: DocRegistry,
     fake_embeddings: FakeEmbeddings,
 ) -> tuple[IngestResult, ChromaStore, DocRegistry, Embeddings]:
-    """
-    Pre-ingested contract PDF for retrieval / citation examples.
-
-    Returns:
-        (ingest_result, chroma_store, doc_registry, embeddings)
-    """
     result = ingest_pdf(
         sample_contract_pdf,
         settings=rag_settings,
@@ -93,20 +97,3 @@ def ingested_contract(
     )
     assert result.status == DocStatus.INDEXED
     return result, chroma_store, doc_registry, fake_embeddings
-
-
-def make_sample_pdf(path: Path, pages: list[str]) -> Path:
-    """
-    Create a minimal PDF with known text per page (for parser / pipeline tests).
-
-    Args:
-        path: Output ``.pdf`` path.
-        pages: List of page texts; one page per item.
-    """
-    doc = fitz.open()
-    for text in pages:
-        page = doc.new_page()
-        page.insert_text((72, 72), text)
-    doc.save(path)
-    doc.close()
-    return path

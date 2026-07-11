@@ -1,14 +1,15 @@
-"""Agent orchestration: router, workflows, tools, callbacks."""
+"""Agent orchestration: runtime, router, callbacks."""
 
 from agent.orchestrator import run
-from agent.router import build_scope_from_selection, route
-from agent.workflows import AnalyzeWorkflow, QAWorkflow, SummarizeWorkflow
+from agent.runtime import AgentRuntime, ExecuteRequest, get_runtime
+from agent.router import build_scope_from_selection, intent_label, route
 
 __all__ = [
-    "AnalyzeWorkflow",
-    "QAWorkflow",
-    "SummarizeWorkflow",
+    "AgentRuntime",
+    "ExecuteRequest",
     "build_scope_from_selection",
+    "get_runtime",
+    "intent_label",
     "route",
     "run",
 ]

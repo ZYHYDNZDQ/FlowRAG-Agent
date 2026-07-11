@@ -1,10 +1,8 @@
 """
 Streamlit callback handler — bridge LangChain events to AgentStep list.
 
-Captures: routing decisions, retrieval queries/hits, LLM generation phases.
-Consumed by ui/components/agent_trace.py for live display.
-
-Implementation planned for Day 4.
+Agent trace is currently emitted via ``skills.helpers.emit_step``.
+This module is reserved for future LangChain callback integration.
 """
 
 from __future__ import annotations
